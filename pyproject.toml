@@ -1,0 +1,6 @@
+[project]
+name = "scrape-review"
+version = "0.1.0"
+description = "Side-by-side review dashboard for scraped data: source pages, extracted fields, verdicts and error bounds"
+requires-python = ">=3.12"
+dependencies = ["flask>=3"]

@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% block body %}
+<h1>Tasks</h1>
+{% for meta, s in tasks %}
+<section class="card"><h2><a href="{{ url_for('task_page', task=meta.name) }}">{{ meta.title }}</a></h2>
+<p>{{ meta.description }}</p>
+<p class="stat">{{ s.docs }} documents · {{ s.done|length }} reviewed · random sample {{ s.random_n }}/{{ s.queues.random|length }}
+{% if s.bound is not none %} · error rate ≤ {{ '%.1f' % (100 * s.bound) }}% (95% bound){% endif %}</p></section>
+{% else %}<p>No tasks. Put a <code>manifest.jsonl</code> under <code>tasks/&lt;name&gt;/</code>.</p>{% endfor %}
+{% endblock %}

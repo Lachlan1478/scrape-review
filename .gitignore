@@ -1,0 +1,4 @@
+tasks/*/pages/
+review.db
+__pycache__/
+.venv/

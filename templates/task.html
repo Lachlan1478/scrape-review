@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% block title %}{{ meta.title }}{% endblock %}
+{% block crumbs %} › {{ meta.title }}{% endblock %}
+{% block body %}
+<h1>{{ meta.title }}</h1><p>{{ meta.description }}</p>
+<div class="grid">
+<section class="card"><h2>Confidence</h2>
+<p class="big">{% if s.bound is none %}no random reviews yet{% else %}error rate ≤ {{ '%.1f' % (100 * s.bound) }}%{% endif %}</p>
+<p>{{ s.random_n }} random documents reviewed, {{ s.random_errors }} with an error. The bound is the 95% Wilson upper limit on the share of documents with at least one wrong field.
+{% set need = [(30, 'under 10%'), (60, 'under 5%'), (300, 'under 1%')] %}Zero errors in 30, 60 or 300 random documents gives {{ need|map(attribute=1)|join(', ') }}.</p>
+<table><tr><th>Field type</th><th>Reviewed</th><th>Wrong</th><th>Accuracy</th></tr>
+{% for t, (n, w) in s.by_type.items() %}<tr><td>{{ t }}</td><td>{{ n }}</td><td>{{ w }}</td><td>{{ '%.1f' % (100 * (n - w) / n) }}%</td></tr>{% endfor %}</table>
+<p><a href="{{ url_for('corrections', task=meta.name) }}">Download verdicts and corrections</a></p></section>
+<section class="card"><h2>Random sample</h2><p>Stable seeded sample of {{ s.queues.random|length }} of {{ s.docs }} documents. Review these in order.</p>
+<ol>{% for d in s.queues.random %}<li class="{{ 'done' if d.doc_id in s.done }}{{ ' bad' if d.doc_id in s.wrong_docs }}"><a href="{{ url_for('doc_page', task=meta.name, doc_id=d.doc_id, q='random') }}">{{ d.title }}</a></li>{% endfor %}</ol></section>
+<section class="card"><h2>Targeted</h2><p>{{ s.targeted_total }} documents carry a risk flag; {{ s.targeted_n }} reviewed. If these hold up, the rest almost certainly do.</p>
+<ol>{% for d in s.queues.targeted %}<li class="{{ 'done' if d.doc_id in s.done }}{{ ' bad' if d.doc_id in s.wrong_docs }}"><a href="{{ url_for('doc_page', task=meta.name, doc_id=d.doc_id, q='targeted') }}">{{ d.title }}</a> <small>{{ d.flags|join('; ') }}</small></li>{% endfor %}</ol></section>
+</div>{% endblock %}
