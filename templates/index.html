@@ -1,9 +1,13 @@
 {% extends "base.html" %}{% block body %}
+<div class="wrap">
 <h1>Tasks</h1>
+<p class="lede">Each task is a set of documents that were read by a model. Review a random sample against the source pages and the error bound tightens as you go.</p>
 {% for meta, s in tasks %}
-<section class="card"><h2><a href="{{ url_for('task_page', task=meta.name) }}">{{ meta.title }}</a></h2>
-<p>{{ meta.description }}</p>
-<p class="stat">{{ s.docs }} documents · {{ s.done|length }} reviewed · random sample {{ s.random_n }}/{{ s.queues.random|length }}
-{% if s.bound is not none %} · error rate ≤ {{ '%.1f' % (100 * s.bound) }}% (95% bound){% endif %}</p></section>
-{% else %}<p>No tasks. Put a <code>manifest.jsonl</code> under <code>tasks/&lt;name&gt;/</code>.</p>{% endfor %}
-{% endblock %}
+<section class="task-row">
+<div><h2><a href="{{ url_for('task_page', task=meta.name) }}">{{ meta.title }}</a></h2><p>{{ meta.description }}</p>
+<p class="muted">{{ '{:,}'.format(s.docs) }} documents, {{ '{:,}'.format(s.done|length) }} reviewed</p></div>
+<div class="tally small">{% for d in s.queues.random %}<span class="tk{{ ' ok' if d.doc_id in s.done and d.doc_id not in s.wrong_docs }}{{ ' bad' if d.doc_id in s.wrong_docs }}"></span>{% endfor %}</div>
+<div class="bound-mini">{% if s.bound is none %}<span class="muted">not yet sampled</span>{% else %}<b>≤ {{ '%.1f' % (100 * s.bound) }}%</b> error rate{% endif %}</div>
+</section>
+{% else %}<p class="empty">No tasks yet. Put a manifest at <code>tasks/&lt;name&gt;/manifest.jsonl</code> and it appears here.</p>{% endfor %}
+</div>{% endblock %}

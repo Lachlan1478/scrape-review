@@ -75,6 +75,15 @@ def stats(task, docs):
             "targeted_n": sum(d["doc_id"] in done for d in q["targeted"]), "targeted_total": len(q["targeted"]), "queues": q}
 
 
+def ledger(doc):
+    """Group fields into sections and rows so one holder is reviewed as one line."""
+    secs = {}
+    for f in doc["fields"]:
+        key = f["id"] if f.get("row") is None else f["row"]
+        secs.setdefault(f.get("section", "Report"), {}).setdefault(key, []).append(f)
+    return [(name, list(rows.values())) for name, rows in secs.items()]
+
+
 @app.route("/")
 def index():
     tasks = []
@@ -102,7 +111,7 @@ def doc_page(task, doc_id):
     nxt = next((x for x in order[order.index(doc_id) + 1:] if x not in s["done"]), None) if doc_id in order else None
     con = db()
     verdicts = {r["field_id"]: dict(r) for r in con.execute("SELECT * FROM verdicts WHERE task=? AND doc_id=?", (task, doc_id))}
-    return render_template("doc.html", meta=meta, doc=doc, verdicts=verdicts, q=q, nxt=nxt, s=s,
+    return render_template("doc.html", meta=meta, doc=doc, ledger=ledger(doc), verdicts=verdicts, q=q, nxt=nxt, s=s,
                            position=order.index(doc_id) + 1 if doc_id in order else None, total=len(order))
 
 

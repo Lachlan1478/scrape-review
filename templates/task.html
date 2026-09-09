@@ -1,17 +1,23 @@
 {% extends "base.html" %}{% block title %}{{ meta.title }}{% endblock %}
-{% block crumbs %} › {{ meta.title }}{% endblock %}
+{% block crumbs %}<span class="crumb">{{ meta.title }}</span>{% endblock %}
 {% block body %}
-<h1>{{ meta.title }}</h1><p>{{ meta.description }}</p>
-<div class="grid">
-<section class="card"><h2>Confidence</h2>
-<p class="big">{% if s.bound is none %}no random reviews yet{% else %}error rate ≤ {{ '%.1f' % (100 * s.bound) }}%{% endif %}</p>
-<p>{{ s.random_n }} random documents reviewed, {{ s.random_errors }} with an error. The bound is the 95% Wilson upper limit on the share of documents with at least one wrong field.
-{% set need = [(30, 'under 10%'), (60, 'under 5%'), (300, 'under 1%')] %}Zero errors in 30, 60 or 300 random documents gives {{ need|map(attribute=1)|join(', ') }}.</p>
-<table><tr><th>Field type</th><th>Reviewed</th><th>Wrong</th><th>Accuracy</th></tr>
-{% for t, (n, w) in s.by_type.items() %}<tr><td>{{ t }}</td><td>{{ n }}</td><td>{{ w }}</td><td>{{ '%.1f' % (100 * (n - w) / n) }}%</td></tr>{% endfor %}</table>
-<p><a href="{{ url_for('corrections', task=meta.name) }}">Download verdicts and corrections</a></p></section>
-<section class="card"><h2>Random sample</h2><p>Stable seeded sample of {{ s.queues.random|length }} of {{ s.docs }} documents. Review these in order.</p>
-<ol>{% for d in s.queues.random %}<li class="{{ 'done' if d.doc_id in s.done }}{{ ' bad' if d.doc_id in s.wrong_docs }}"><a href="{{ url_for('doc_page', task=meta.name, doc_id=d.doc_id, q='random') }}">{{ d.title }}</a></li>{% endfor %}</ol></section>
-<section class="card"><h2>Targeted</h2><p>{{ s.targeted_total }} documents carry a risk flag; {{ s.targeted_n }} reviewed. If these hold up, the rest almost certainly do.</p>
-<ol>{% for d in s.queues.targeted %}<li class="{{ 'done' if d.doc_id in s.done }}{{ ' bad' if d.doc_id in s.wrong_docs }}"><a href="{{ url_for('doc_page', task=meta.name, doc_id=d.doc_id, q='targeted') }}">{{ d.title }}</a> <small>{{ d.flags|join('; ') }}</small></li>{% endfor %}</ol></section>
+<div class="wrap">
+<h1>{{ meta.title }}</h1><p class="lede">{{ meta.description }}</p>
+
+<section class="confidence">
+<div class="bound">{% if s.bound is none %}<span class="bound-n">0<small> of {{ s.queues.random|length }}</small></span><span class="bound-l">random documents checked. The error bound appears after the first one.</span>
+{% else %}<span class="bound-n">≤ {{ '%.1f' % (100 * s.bound) }}%</span><span class="bound-l">of documents contain an error, at 95% confidence</span>{% endif %}</div>
+<div class="tally-block"><div class="tally">{% for d in s.queues.random %}<a class="tk{{ ' ok' if d.doc_id in s.done and d.doc_id not in s.wrong_docs }}{{ ' bad' if d.doc_id in s.wrong_docs }}" href="{{ url_for('doc_page', task=meta.name, doc_id=d.doc_id, q='random') }}" title="{{ d.title }}"></a>{% endfor %}</div>
+<p class="muted">One mark per document in the random sample: {{ s.random_n }} of {{ s.queues.random|length }} checked, {{ s.random_errors }} with a wrong field. Zero errors in 30 gives under 10%, in 60 under 5%, in 300 under 1%.</p></div>
+<div class="bytype">{% if s.by_type %}<table><tr><th>Field type</th><th class="num">Checked</th><th class="num">Wrong</th><th class="num">Accuracy</th></tr>
+{% for t, (n, w) in s.by_type.items() %}<tr><td>{{ t }}</td><td class="num">{{ n }}</td><td class="num">{{ w }}</td><td class="num">{{ '%.1f' % (100 * (n - w) / n) }}%</td></tr>{% endfor %}</table>
+<a class="dl" href="{{ url_for('corrections', task=meta.name) }}">Download verdicts and corrections</a>{% else %}<p class="muted">Per-field accuracy appears after the first review.</p>{% endif %}</div>
+</section>
+
+<div class="queues">
+<section><h2>Random sample</h2><p class="muted">A fixed draw of {{ s.queues.random|length }} from {{ '{:,}'.format(s.docs) }} documents. Work down the list in order.</p>
+<ol class="docs">{% for d in s.queues.random %}<li class="{{ 'done' if d.doc_id in s.done }}{{ ' bad' if d.doc_id in s.wrong_docs }}"><a href="{{ url_for('doc_page', task=meta.name, doc_id=d.doc_id, q='random') }}">{{ d.title }}</a></li>{% endfor %}</ol></section>
+<section><h2>Flagged documents</h2><p class="muted">{{ '{:,}'.format(s.targeted_total) }} documents were hard to read or failed a consistency check; {{ s.targeted_n }} checked so far. Errors are most likely here.</p>
+<ul class="docs">{% for d in s.queues.targeted %}<li class="{{ 'done' if d.doc_id in s.done }}{{ ' bad' if d.doc_id in s.wrong_docs }}"><a href="{{ url_for('doc_page', task=meta.name, doc_id=d.doc_id, q='targeted') }}">{{ d.title }}</a><span class="why">{{ d.flags|join('. ') }}</span></li>{% endfor %}</ul></section>
+</div>
 </div>{% endblock %}

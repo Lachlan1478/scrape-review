@@ -1,23 +1,33 @@
-{% extends "base.html" %}{% block title %}{{ doc.title }}{% endblock %}
-{% block crumbs %} › <a href="{{ url_for('task_page', task=meta.name) }}">{{ meta.title }}</a> › {{ doc.title }}{% endblock %}
+{% extends "base.html" %}{% block title %}{{ doc.title }}{% endblock %}{% block bodyclass %}review{% endblock %}
+{% block crumbs %}<a href="{{ url_for('task_page', task=meta.name) }}">{{ meta.title }}</a><span class="crumb">{{ doc.title }}</span>{% endblock %}
+{% macro fmt(f) %}{% if f.value is none %}—{% elif f.type == 'int' %}{{ '{:,}'.format(f.value|int) }}{% else %}{{ f.value }}{% endif %}{% endmacro %}
 {% block body %}
-<div class="bar"><div><strong>{{ doc.title }}</strong> <small>{{ doc.subtitle }}</small>
-{% if position %}<small>· {{ q }} queue {{ position }}/{{ total }}</small>{% endif %}
-{% for f in doc.flags %}<span class="flag">{{ f }}</span>{% endfor %}</div>
-<div><a href="{{ doc.source_url }}" target="_blank">Open source filing ↗</a>
-<button id="accept-all">Accept all remaining (a)</button>
-{% if nxt %}<a class="btn" href="{{ url_for('doc_page', task=meta.name, doc_id=nxt, q=q) }}">Next unreviewed (n)</a>{% else %}<a class="btn" href="{{ url_for('task_page', task=meta.name) }}">Back to task</a>{% endif %}</div></div>
+<div class="bar">
+<div class="bar-title"><h1>{{ doc.title }}</h1><span class="muted">{{ doc.subtitle }}{% if position %}, {{ 'random sample' if q == 'random' else 'flagged' }} {{ position }} of {{ total }}{% endif %}</span>
+{% if doc.flags %}<span class="flags">Flagged: {{ doc.flags|join('. ') }}.</span>{% endif %}</div>
+<div class="bar-actions"><a class="btn quiet" href="{{ doc.source_url }}" target="_blank" rel="noopener">Open the filing</a>
+<button id="accept-all" class="btn">Accept the rest<kbd>a</kbd></button>
+{% if nxt %}<a class="btn primary" href="{{ url_for('doc_page', task=meta.name, doc_id=nxt, q=q) }}">Next unchecked<kbd>n</kbd></a>{% else %}<a class="btn primary" href="{{ url_for('task_page', task=meta.name) }}">Back to task<kbd>n</kbd></a>{% endif %}</div>
+</div>
 <div class="split">
 <div id="pages">{% for img in doc.pages %}<div class="page" data-page="{{ loop.index0 }}"><img src="{{ url_for('media', task=meta.name, name=img) }}" alt="page {{ loop.index }}"></div>{% endfor %}</div>
-<div id="fields"><table>
-{% for f in doc.fields %}{% set v = verdicts.get(f.id) %}
-<tr class="field {{ 'ok' if v and v.verdict == 'ok' }}{{ 'wrong' if v and v.verdict == 'wrong' }}{{ ' empty' if f.value in (None, '') }}{{ ' unlocated' if f.value not in (None, '') and f.bbox is not defined }}"
- data-id="{{ f.id }}" {% if f.bbox is defined %}data-page="{{ f.page }}" data-bbox="{{ f.bbox|join(',') }}"{% endif %}>
-<td class="label">{{ f.label }}</td><td class="value">{% if f.value is none %}—{% elif f.type == 'int' %}{{ '{:,}'.format(f.value|int) }}{% else %}{{ f.value }}{% endif %}</td>
-<td class="verdict">{% if f.value not in (None, '') %}<button class="y" title="correct (y)">✓</button><button class="n" title="wrong (x)">✗</button>{% endif %}</td>
-<td class="fix"><input placeholder="correct value" value="{{ v.correction if v and v.correction else '' }}" {% if not v or v.verdict != 'wrong' %}hidden{% endif %}></td></tr>
+<div id="ledger">
+{% for section, rows in ledger %}
+<h2>{{ section }}</h2>
+<table class="sec">
+{% if rows[0]|length > 1 %}<tr><th></th>{% for f in rows[0] %}<th class="{{ 'num' if f.type in ('int', 'pct') }}">{{ f.label }}</th>{% endfor %}<th></th></tr>{% endif %}
+{% for row in rows %}<tr class="r">
+<td class="rn">{% if row|length > 1 %}{{ loop.index }}{% else %}{{ row[0].label }}{% endif %}</td>
+{% for f in row %}{% set v = verdicts.get(f.id) %}{% set live = f.value not in (None, '') %}
+<td class="f{{ ' num' if f.type in ('int', 'pct') }}{{ ' empty' if not live }}{{ ' ok' if v and v.verdict == 'ok' }}{{ ' wrong' if v and v.verdict == 'wrong' }}{{ ' unlocated' if live and f.bbox is not defined }}"
+ data-id="{{ f.id }}" data-value="{{ fmt(f) }}" {% if f.bbox is defined %}data-page="{{ f.page }}" data-bbox="{{ f.bbox|join(',') }}"{% endif %}{% if live and f.bbox is not defined %} title="Not found in the page text. Check it against the image."{% endif %}>
+<span class="v">{{ fmt(f) }}</span>{% if live %}<input class="fix" placeholder="correct value" value="{{ v.correction if v and v.correction else '' }}" {% if not v or v.verdict != 'wrong' %}hidden{% endif %}>{% endif %}</td>
+{% endfor %}
+<td class="act"><button class="y" title="Whole row is right (y)">✓</button><button class="x" title="Selected cell is wrong (x)">✗</button></td></tr>
 {% endfor %}</table>
-<p class="hint">Click a row to jump to it on the page. Keys: j/k move, y correct, x wrong, a accept all remaining, n next document. Rows in grey could not be located in the text layer, so check them against the image.</p></div>
+{% endfor %}
+<p class="keys">Click a cell to see it on the page. <kbd>j</kbd><kbd>k</kbd> rows, <kbd>h</kbd><kbd>l</kbd> cells, <kbd>y</kbd> row is right, <kbd>x</kbd> cell is wrong, <kbd>a</kbd> accept the rest, <kbd>n</kbd> next document. Dotted values were not found in the page text, so check them against the image.</p>
+</div>
 </div>{% endblock %}
 {% block scripts %}<script>const VERDICT_URL = "{{ url_for('verdict', task=meta.name, doc_id=doc.doc_id) }}"; const NEXT_URL = {{ (url_for('doc_page', task=meta.name, doc_id=nxt, q=q) if nxt else url_for('task_page', task=meta.name))|tojson }};</script>
 <script src="{{ url_for('static', filename='review.js') }}"></script>{% endblock %}
