@@ -21,8 +21,8 @@ Create `tasks/<name>/task.json` (`name`, `title`, `description`), `tasks/<name>/
 ```json
 {"doc_id": "...", "title": "...", "subtitle": "...", "source_url": "https://...",
  "pages": ["doc-0.png", "doc-1.png"],
- "fields": [{"id": "sh.0.shares", "label": "shares", "value": 119109046, "type": "int", "page": 1, "bbox": [0.51, 0.19, 0.58, 0.21]}],
+ "fields": [{"id": "sh.0.shares", "label": "Shares", "value": 119109046, "type": "int", "section": "Substantial holders", "row": 0, "page": 1, "bbox": [0.51, 0.19, 0.58, 0.21]}],
  "flags": ["thin text layer"], "strata": {"symbol": "WTC"}}
 ```
 
-`bbox` is optional and in fractions of the page. `type` is one of `text`, `int`, `pct`, `date`. The dashboard knows nothing about the domain; `asx-substantial-holders/review_export.py` is the reference exporter.
+`bbox` is optional and in fractions of the page. Fields sharing a `section` and `row` are shown as one ledger line and accepted together; `row` null gives a field its own line. `type` is one of `text`, `int`, `pct`, `date`. The dashboard knows nothing about the domain; `asx-substantial-holders/review_export.py` is the reference exporter.
