@@ -1,8 +1,8 @@
 {% extends "base.html" %}{% block title %}{{ doc.title }}{% endblock %}{% block bodyclass %}review{% endblock %}
 {% block crumbs %}<a href="{{ url_for('task_page', task=meta.name) }}">{{ meta.title }}</a><span class="crumb">{{ doc.title }}</span>{% endblock %}
-{% macro cell(f, v) %}{% set live = f.value not in (None, '') and f.type != 'note' %}<td class="f{{ ' num' if f.type in ('int', 'pct') }}{{ ' ' + f.type if f.type in ('quote', 'note', 'enum') }}{{ ' empty' if not live }}{{ ' ok' if v and v.verdict == 'ok' }}{{ ' wrong' if v and v.verdict == 'wrong' }}{{ ' unlocated' if live and f.bbox is not defined and f.type not in ('enum',) }}"
+{% macro cell(f, v, caption=none) %}{% set live = f.value not in (None, '') and f.type != 'note' %}<td class="f{{ ' num' if f.type in ('int', 'pct') }}{{ ' ' + f.type if f.type in ('quote', 'note', 'enum') }}{{ ' empty' if not live }}{{ ' ok' if v and v.verdict == 'ok' }}{{ ' wrong' if v and v.verdict == 'wrong' }}{{ ' unlocated' if live and f.bbox is not defined and f.type not in ('enum',) }}"
  data-id="{{ f.id }}" data-value="{{ fmt(f)|truncate(60) }}" {% if f.bbox is defined %}data-page="{{ f.page }}" data-bbox="{{ f.bbox|join(',') }}"{% endif %}{% if f.boxes is defined %} data-boxes="{{ f.boxes|tojson|forceescape }}"{% endif %}{% if live and f.bbox is not defined and f.type not in ('enum',) %} title="Not found in the page text. Check it against the image."{% endif %}>
-<span class="v">{{ fmt(f) }}</span>{% if live and f.options is defined %}<select class="fix" {% if not v or v.verdict != 'wrong' %}hidden{% endif %}><option value="">correct answer</option>{% for o in f.options %}<option value="{{ o }}" {% if v and v.correction == o %}selected{% endif %}>{{ o|replace('_', ' ') }}</option>{% endfor %}</select>{% elif live %}<input class="fix" placeholder="correct value" value="{{ v.correction if v and v.correction else '' }}" {% if not v or v.verdict != 'wrong' %}hidden{% endif %}>{% endif %}</td>{% endmacro %}
+<span class="v">{% if caption %}<small class="cap">{{ caption }}</small>{% endif %}{{ fmt(f) }}</span>{% if live and f.options is defined %}<select class="fix" {% if not v or v.verdict != 'wrong' %}hidden{% endif %}><option value="">correct answer</option>{% for o in f.options %}<option value="{{ o }}" {% if v and v.correction == o %}selected{% endif %}>{{ o|replace('_', ' ') }}</option>{% endfor %}</select>{% elif live %}<input class="fix" placeholder="correct value" value="{{ v.correction if v and v.correction else '' }}" {% if not v or v.verdict != 'wrong' %}hidden{% endif %}>{% endif %}</td>{% endmacro %}
 {% macro fmt(f) %}{% if f.value is none %}—{% elif f.type == 'int' %}{{ '{:,}'.format(f.value|int) }}{% elif f.type == 'enum' %}{{ f.value|replace('_', ' ') }}{% else %}{{ f.value }}{% endif %}{% endmacro %}
 {% block body %}
 <div class="bar">
@@ -22,7 +22,7 @@
 {% if rows[0]|length > 1 and not stacked %}<tr><th></th>{% for f in rows[0] %}<th class="{{ 'num' if f.type in ('int', 'pct') }}">{{ f.label }}</th>{% endfor %}<th></th></tr>{% endif %}
 {% for row in rows %}{% set rowno = loop.index %}<tbody class="r{{ ' stacked' if stacked }}"><tr>
 <td class="rn">{% if row[0].row_label %}{{ row[0].row_label }}{% elif row|length > 1 %}{{ rowno }}{% else %}{{ row[0].label }}{% endif %}</td>
-{% for f in row if not stacked or f.type not in ('quote', 'note') %}{{ cell(f, verdicts.get(f.id)) }}{% endfor %}
+{% for f in row if not stacked or f.type not in ('quote', 'note') %}{{ cell(f, verdicts.get(f.id), f.label if stacked and not loop.first else none) }}{% endfor %}
 <td class="act"><button class="y" title="Whole row is right (y)">✓</button><button class="x" title="Selected cell is wrong; press again to undo (x)">✗</button></td></tr>
 {% if stacked %}{% for f in row if f.type in ('quote', 'note') and f.value %}<tr class="sub"><td class="rn">{{ f.label }}</td>{{ cell(f, verdicts.get(f.id)) }}<td></td></tr>{% endfor %}{% endif %}
 </tbody>{% endfor %}</table>
