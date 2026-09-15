@@ -6,7 +6,11 @@
 
 <section class="confidence">
 <div class="bound">{% if s.bound is none %}<span class="bound-n">0<small> of {{ s.queues.random|length }}</small></span><span class="bound-l">random documents checked. The error bound appears after the first one.</span>
-{% else %}<span class="bound-n">≤ {{ '%.1f' % (100 * s.bound) }}%</span><span class="bound-l">of documents contain an error, at 95% confidence</span>{% endif %}</div>
+{% else %}<span class="bound-n">≤ {{ '%.1f' % (100 * s.bound) }}%</span><span class="bound-l">of documents contain an error, at 95% confidence</span>
+<details class="how"><summary>How this is worked out</summary>
+<p>{{ s.random_errors }} of the {{ s.random_n }} random documents checked had at least one wrong field, so the observed rate is p = {{ '%.3f' % (s.random_errors / s.random_n) }}. The figure is the upper end of the 95% Wilson score interval, which stays honest for small samples and for zero errors:</p>
+<p class="formula">(p + z²/2n + z·√(p(1−p)/n + z²/4n²)) / (1 + z²/n), with z = 1.96 and n = {{ s.random_n }}</p>
+<p>It only uses the random sample, because flagged documents are picked for being risky and would bias the rate. It shrinks as n grows and as errors stay at zero.</p></details>{% endif %}</div>
 <div class="tally-block"><div class="tally">{% for d in s.queues.random %}<a class="tk{{ ' ok' if d.doc_id in s.done and d.doc_id not in s.wrong_docs }}{{ ' bad' if d.doc_id in s.wrong_docs }}" href="{{ url_for('doc_page', task=meta.name, doc_id=d.doc_id, q='random') }}" title="{{ d.title }}"></a>{% endfor %}</div>
 <p class="muted">One mark per document in the random sample: {{ s.random_n }} of {{ s.queues.random|length }} checked, {{ s.random_errors }} with a wrong field. Zero errors in 30 gives under 10%, in 60 under 5%, in 300 under 1%.</p></div>
 <div class="bytype">{% if s.by_type %}<table><tr><th>Field type</th><th class="num">Checked</th><th class="num">Wrong</th><th class="num">Accuracy</th></tr>

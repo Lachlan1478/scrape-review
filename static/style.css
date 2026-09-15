@@ -33,6 +33,10 @@ main{padding:0 28px 48px}
 .bound-n{display:block;font:500 56px/1 var(--serif);letter-spacing:-.02em;white-space:nowrap}
 .bound-n small{font-size:30px;color:var(--muted)}
 .bound-l{display:block;margin-top:10px;color:var(--muted);max-width:26ch}
+.how{margin-top:16px;font-size:13px;color:var(--muted);max-width:34ch}
+.how summary{cursor:pointer;color:var(--ink);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+.how p{margin:8px 0 0}
+.how .formula{font-family:var(--serif);color:var(--ink);font-size:14px}
 .tally{display:grid;grid-template-columns:repeat(30,14px);gap:3px}
 .tally.small{grid-template-columns:repeat(30,9px);gap:2px}
 .tk{display:block;height:22px;background:var(--sheet);border:1px solid var(--rule);border-radius:1px}
