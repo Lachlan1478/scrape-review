@@ -57,7 +57,7 @@ def stats(task, docs):
     by_type = defaultdict(lambda: [0, 0])
     done, wrong_docs = set(), set()
     for d in docs:
-        live = [f for f in d["fields"] if f["value"] not in (None, "")]
+        live = [f for f in d["fields"] if f["value"] not in (None, "") and f.get("type") != "note"]
         vs = v.get(d["doc_id"], {})
         if live and all(f["id"] in vs for f in live):
             done.add(d["doc_id"])

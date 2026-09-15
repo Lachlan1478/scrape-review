@@ -1,6 +1,9 @@
 {% extends "base.html" %}{% block title %}{{ doc.title }}{% endblock %}{% block bodyclass %}review{% endblock %}
 {% block crumbs %}<a href="{{ url_for('task_page', task=meta.name) }}">{{ meta.title }}</a><span class="crumb">{{ doc.title }}</span>{% endblock %}
-{% macro fmt(f) %}{% if f.value is none %}—{% elif f.type == 'int' %}{{ '{:,}'.format(f.value|int) }}{% else %}{{ f.value }}{% endif %}{% endmacro %}
+{% macro cell(f, v) %}{% set live = f.value not in (None, '') and f.type != 'note' %}<td class="f{{ ' num' if f.type in ('int', 'pct') }}{{ ' ' + f.type if f.type in ('quote', 'note', 'enum') }}{{ ' empty' if not live }}{{ ' ok' if v and v.verdict == 'ok' }}{{ ' wrong' if v and v.verdict == 'wrong' }}{{ ' unlocated' if live and f.bbox is not defined and f.type not in ('enum',) }}"
+ data-id="{{ f.id }}" data-value="{{ fmt(f)|truncate(60) }}" {% if f.bbox is defined %}data-page="{{ f.page }}" data-bbox="{{ f.bbox|join(',') }}"{% endif %}{% if f.boxes is defined %} data-boxes="{{ f.boxes|tojson|forceescape }}"{% endif %}{% if live and f.bbox is not defined and f.type not in ('enum',) %} title="Not found in the page text. Check it against the image."{% endif %}>
+<span class="v">{{ fmt(f) }}</span>{% if live and f.options is defined %}<select class="fix" {% if not v or v.verdict != 'wrong' %}hidden{% endif %}><option value="">correct answer</option>{% for o in f.options %}<option value="{{ o }}" {% if v and v.correction == o %}selected{% endif %}>{{ o|replace('_', ' ') }}</option>{% endfor %}</select>{% elif live %}<input class="fix" placeholder="correct value" value="{{ v.correction if v and v.correction else '' }}" {% if not v or v.verdict != 'wrong' %}hidden{% endif %}>{% endif %}</td>{% endmacro %}
+{% macro fmt(f) %}{% if f.value is none %}—{% elif f.type == 'int' %}{{ '{:,}'.format(f.value|int) }}{% elif f.type == 'enum' %}{{ f.value|replace('_', ' ') }}{% else %}{{ f.value }}{% endif %}{% endmacro %}
 {% block body %}
 <div class="bar">
 <div class="bar-title"><h1>{{ doc.title }}</h1><span class="muted">{{ doc.subtitle }}{% if position %}, {{ 'random sample' if q == 'random' else 'flagged' }} {{ position }} of {{ total }}{% endif %}</span>
@@ -15,16 +18,14 @@
 {% for section, rows in ledger %}
 <h2>{{ section }}</h2>
 <table class="sec">
-{% if rows[0]|length > 1 %}<tr><th></th>{% for f in rows[0] %}<th class="{{ 'num' if f.type in ('int', 'pct') }}">{{ f.label }}</th>{% endfor %}<th></th></tr>{% endif %}
-{% for row in rows %}<tr class="r">
-<td class="rn">{% if row|length > 1 %}{{ loop.index }}{% else %}{{ row[0].label }}{% endif %}</td>
-{% for f in row %}{% set v = verdicts.get(f.id) %}{% set live = f.value not in (None, '') %}
-<td class="f{{ ' num' if f.type in ('int', 'pct') }}{{ ' empty' if not live }}{{ ' ok' if v and v.verdict == 'ok' }}{{ ' wrong' if v and v.verdict == 'wrong' }}{{ ' unlocated' if live and f.bbox is not defined }}"
- data-id="{{ f.id }}" data-value="{{ fmt(f) }}" {% if f.bbox is defined %}data-page="{{ f.page }}" data-bbox="{{ f.bbox|join(',') }}"{% endif %}{% if live and f.bbox is not defined %} title="Not found in the page text. Check it against the image."{% endif %}>
-<span class="v">{{ fmt(f) }}</span>{% if live %}<input class="fix" placeholder="correct value" value="{{ v.correction if v and v.correction else '' }}" {% if not v or v.verdict != 'wrong' %}hidden{% endif %}>{% endif %}</td>
-{% endfor %}
+{% set stacked = rows[0]|map(attribute='type')|select('in', ['quote', 'note'])|list|length > 0 %}
+{% if rows[0]|length > 1 and not stacked %}<tr><th></th>{% for f in rows[0] %}<th class="{{ 'num' if f.type in ('int', 'pct') }}">{{ f.label }}</th>{% endfor %}<th></th></tr>{% endif %}
+{% for row in rows %}{% set rowno = loop.index %}<tbody class="r{{ ' stacked' if stacked }}"><tr>
+<td class="rn">{% if row[0].row_label %}{{ row[0].row_label }}{% elif row|length > 1 %}{{ rowno }}{% else %}{{ row[0].label }}{% endif %}</td>
+{% for f in row if not stacked or f.type not in ('quote', 'note') %}{{ cell(f, verdicts.get(f.id)) }}{% endfor %}
 <td class="act"><button class="y" title="Whole row is right (y)">✓</button><button class="x" title="Selected cell is wrong; press again to undo (x)">✗</button></td></tr>
-{% endfor %}</table>
+{% if stacked %}{% for f in row if f.type in ('quote', 'note') and f.value %}<tr class="sub"><td class="rn">{{ f.label }}</td>{{ cell(f, verdicts.get(f.id)) }}<td></td></tr>{% endfor %}{% endif %}
+</tbody>{% endfor %}</table>
 {% endfor %}
 <p class="keys">Click a cell to see it on the page. <kbd>j</kbd><kbd>k</kbd> rows, <kbd>h</kbd><kbd>l</kbd> cells, <kbd>y</kbd> row is right, <kbd>x</kbd> cell is wrong (again to undo), <kbd>a</kbd> accept the rest, <kbd>n</kbd> next document. Dotted values were not found in the page text, so check them against the image.</p>
 </div>
