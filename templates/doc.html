@@ -23,10 +23,10 @@
  data-id="{{ f.id }}" data-value="{{ fmt(f) }}" {% if f.bbox is defined %}data-page="{{ f.page }}" data-bbox="{{ f.bbox|join(',') }}"{% endif %}{% if live and f.bbox is not defined %} title="Not found in the page text. Check it against the image."{% endif %}>
 <span class="v">{{ fmt(f) }}</span>{% if live %}<input class="fix" placeholder="correct value" value="{{ v.correction if v and v.correction else '' }}" {% if not v or v.verdict != 'wrong' %}hidden{% endif %}>{% endif %}</td>
 {% endfor %}
-<td class="act"><button class="y" title="Whole row is right (y)">✓</button><button class="x" title="Selected cell is wrong (x)">✗</button></td></tr>
+<td class="act"><button class="y" title="Whole row is right (y)">✓</button><button class="x" title="Selected cell is wrong; press again to undo (x)">✗</button></td></tr>
 {% endfor %}</table>
 {% endfor %}
-<p class="keys">Click a cell to see it on the page. <kbd>j</kbd><kbd>k</kbd> rows, <kbd>h</kbd><kbd>l</kbd> cells, <kbd>y</kbd> row is right, <kbd>x</kbd> cell is wrong, <kbd>a</kbd> accept the rest, <kbd>n</kbd> next document. Dotted values were not found in the page text, so check them against the image.</p>
+<p class="keys">Click a cell to see it on the page. <kbd>j</kbd><kbd>k</kbd> rows, <kbd>h</kbd><kbd>l</kbd> cells, <kbd>y</kbd> row is right, <kbd>x</kbd> cell is wrong (again to undo), <kbd>a</kbd> accept the rest, <kbd>n</kbd> next document. Dotted values were not found in the page text, so check them against the image.</p>
 </div>
 </div>{% endblock %}
 {% block scripts %}<script>const VERDICT_URL = "{{ url_for('verdict', task=meta.name, doc_id=doc.doc_id) }}"; const NEXT_URL = {{ (url_for('doc_page', task=meta.name, doc_id=nxt, q=q) if nxt else url_for('task_page', task=meta.name))|tojson }};</script>

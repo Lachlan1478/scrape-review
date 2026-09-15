@@ -36,14 +36,17 @@ function set(cell, verdict) {
   cell.classList.toggle('ok', verdict === 'ok'); cell.classList.toggle('wrong', verdict === 'wrong');
   cell.querySelector('input.fix').hidden = verdict !== 'wrong';
 }
+const corrected = c => c.classList.contains('wrong') && c.querySelector('input.fix').value.trim();
 function rowOk(r) {
-  const todo = cells(rows[r]).filter(c => !c.classList.contains('wrong'));
+  const todo = cells(rows[r]).filter(c => !corrected(c));
   todo.forEach(c => set(c, 'ok'));
   post(todo.map(c => ({field_id: c.dataset.id, verdict: 'ok'})));
   select(r + 1);
 }
 function cellWrong(cell) {
-  set(cell, 'wrong'); const input = cell.querySelector('input.fix');
+  const input = cell.querySelector('input.fix');
+  if (cell.classList.contains('wrong')) { input.value = ''; set(cell, 'ok'); return post([{field_id: cell.dataset.id, verdict: 'ok'}]); }
+  set(cell, 'wrong');
   post([{field_id: cell.dataset.id, verdict: 'wrong', correction: input.value || null}]);
   input.focus();
 }
@@ -54,7 +57,10 @@ rows.forEach((row, i) => {
     cell.addEventListener('click', e => { if (e.target.tagName !== 'INPUT') select(i, j); });
     const input = cell.querySelector('input.fix');
     input.addEventListener('change', () => post([{field_id: cell.dataset.id, verdict: 'wrong', correction: input.value || null}]));
-    input.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'Escape') { input.blur(); e.preventDefault(); } });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && !input.value.trim()) cellWrong(cell);
+      if (e.key === 'Enter' || e.key === 'Escape') { input.blur(); e.preventDefault(); }
+    });
   });
   row.querySelector('button.y').addEventListener('click', () => rowOk(i));
   row.querySelector('button.x').addEventListener('click', () => { if (R !== i) select(i, 0); cellWrong(cells(rows[R])[C]); });
