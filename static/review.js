@@ -15,7 +15,7 @@ function box(c, cls) {
   return first;
 }
 function note(c) {
-  if (c.classList.contains('quote')) return;
+  if (c.classList.contains('quote') || c.dataset.value.length > 24) return;
   const [x0, y0, x1, y1] = c.dataset.bbox.split(',').map(Number);
   const pg = pages[+c.dataset.page], h = pg.querySelector('img').clientHeight;
   const n = document.createElement('div'); n.textContent = c.dataset.value;
@@ -40,6 +40,12 @@ function post(items) {
 function set(cell, verdict) {
   cell.classList.toggle('ok', verdict === 'ok'); cell.classList.toggle('wrong', verdict === 'wrong');
   cell.querySelector('.fix').hidden = verdict !== 'wrong';
+  progress();
+}
+function progress() {
+  const all = rows.flatMap(cells), done = all.filter(c => c.classList.contains('ok') || c.classList.contains('wrong'));
+  rows.forEach(r => r.classList.toggle('done', cells(r).length > 0 && cells(r).every(c => c.classList.contains('ok'))));
+  document.getElementById('progress').textContent = `${done.length} of ${all.length} checked`;
 }
 function cellOk() {
   const cell = cells(rows[R])[C];
@@ -87,7 +93,27 @@ document.addEventListener('keydown', e => {
   else return;
   e.preventDefault();
 });
-window.addEventListener('load', () => {
+document.getElementById('keys-toggle').addEventListener('click', () => document.getElementById('keys').classList.toggle('show'));
+const split = document.querySelector('.split'), divider = document.getElementById('divider');
+try { const w = localStorage.getItem('split'); if (w) split.style.gridTemplateColumns = `${w}% 6px 1fr`; } catch (e) {}
+divider.addEventListener('mousedown', e => {
+  e.preventDefault(); divider.classList.add('drag'); document.body.classList.add('dragging');
+  const move = ev => {
+    const pct = Math.max(25, Math.min(75, 100 * (ev.clientX - split.getBoundingClientRect().left) / split.clientWidth));
+    split.style.gridTemplateColumns = `${pct}% 6px 1fr`;
+    try { localStorage.setItem('split', pct.toFixed(1)); } catch (e2) {}
+  };
+  const up = () => { divider.classList.remove('drag'); document.body.classList.remove('dragging'); document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); redraw(); };
+  document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
+});
+function redraw() {
+  document.querySelectorAll('.hl, .pin').forEach(e => e.remove());
   rows.flatMap(cells).filter(c => c.dataset.bbox).forEach(c => box(c, 'hl'));
+  if (R >= 0) select(R, C);
+}
+window.addEventListener('resize', redraw);
+window.addEventListener('load', () => {
+  redraw();
+  progress();
   select(nextRow(-1));
 });

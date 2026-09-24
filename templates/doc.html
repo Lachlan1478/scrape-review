@@ -8,12 +8,14 @@
 <div class="bar">
 <div class="bar-title"><h1>{{ doc.title }}</h1><span class="muted">{{ doc.subtitle }}{% if position %}, {{ 'random sample' if q == 'random' else 'flagged' }} {{ position }} of {{ total }}{% endif %}</span>
 {% if doc.flags %}<span class="flags">Flagged: {{ doc.flags|join('. ') }}.</span>{% endif %}</div>
-<div class="bar-actions"><a class="btn quiet" href="{{ doc.source_url }}" target="_blank" rel="noopener">Open the filing</a>
+<div class="bar-actions"><span class="progress" id="progress"></span><button class="btn quiet keys-toggle" id="keys-toggle" title="Keyboard keys">?</button><a class="btn quiet" href="{{ doc.source_url }}" target="_blank" rel="noopener">Open the filing</a>
 <button id="accept-all" class="btn">Accept the rest<kbd>a</kbd></button>
 {% if nxt %}<a class="btn primary" href="{{ url_for('doc_page', task=meta.name, doc_id=nxt, q=q) }}">Next unchecked<kbd>n</kbd></a>{% else %}<a class="btn primary" href="{{ url_for('task_page', task=meta.name) }}">Back to task<kbd>n</kbd></a>{% endif %}</div>
 </div>
+<p class="keys" id="keys">Click a cell to see it on the page; the tick and cross act on the highlighted cell. <kbd>j</kbd><kbd>k</kbd> rows, <kbd>h</kbd><kbd>l</kbd> cells, <kbd>y</kbd> cell is right and move on, <kbd>x</kbd> cell is wrong (again to undo), <kbd>a</kbd> accept the rest, <kbd>n</kbd> next document. Dotted values were not found in the page text, so check them against the image. Drag the bar between the page and the ledger to resize.</p>
 <div class="split">
 <div id="pages">{% for img in doc.pages %}<div class="page" data-page="{{ loop.index0 }}"><img src="{{ url_for('media', task=meta.name, name=img) }}" alt="page {{ loop.index }}"></div>{% endfor %}</div>
+<div class="divider" id="divider"></div>
 <div id="ledger">
 {% for section, rows in ledger %}
 <h2>{{ section }}</h2>
@@ -27,7 +29,6 @@
 {% if stacked %}{% for f in row if f.type in ('quote', 'note') and f.value %}<tr class="sub"><td class="rn">{{ f.label }}</td>{{ cell(f, verdicts.get(f.id)) }}<td></td></tr>{% endfor %}{% endif %}
 </tbody>{% endfor %}</table>
 {% endfor %}
-<p class="keys">Click a cell to see it on the page; the tick and cross act on the highlighted cell. <kbd>j</kbd><kbd>k</kbd> rows, <kbd>h</kbd><kbd>l</kbd> cells, <kbd>y</kbd> cell is right and move on, <kbd>x</kbd> cell is wrong (again to undo), <kbd>a</kbd> accept the rest, <kbd>n</kbd> next document. Dotted values were not found in the page text, so check them against the image.</p>
 </div>
 </div>{% endblock %}
 {% block scripts %}<script>const VERDICT_URL = "{{ url_for('verdict', task=meta.name, doc_id=doc.doc_id) }}"; const NEXT_URL = {{ (url_for('doc_page', task=meta.name, doc_id=nxt, q=q) if nxt else url_for('task_page', task=meta.name))|tojson }};</script>

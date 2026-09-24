@@ -4,6 +4,7 @@ import hashlib
 import io
 import json
 import math
+import re
 import sqlite3
 from collections import defaultdict
 from datetime import datetime
@@ -42,6 +43,16 @@ def queues(task, docs):
     return {"random": rnd, "targeted": tgt}
 
 
+def flag_kind(flag):
+    """Collapse a flag sentence to its kind: counts, names and years stripped."""
+    f = re.sub(r"^\d[\d,]*\s+", "", flag)
+    f = re.sub(r"\s+\d{4}$", "", f)
+    if ":" in f:
+        head, tail = f.split(":", 1)
+        f = tail.strip() if "%" in tail else head.strip()
+    return f
+
+
 def wilson_upper(errors, n, z=1.96):
     if not n:
         return None
@@ -70,9 +81,15 @@ def stats(task, docs):
     q = queues(task, docs)
     rnd_done = [d["doc_id"] for d in q["random"] if d["doc_id"] in done]
     rnd_wrong = [x for x in rnd_done if x in wrong_docs]
+    groups = defaultdict(list)
+    for d in q["targeted"]:
+        for k in dict.fromkeys(flag_kind(f) for f in d["flags"]):
+            groups[k].append(d)
+    groups = dict(sorted(groups.items(), key=lambda kv: -len(kv[1])))
     return {"docs": len(docs), "done": done, "wrong_docs": wrong_docs, "by_type": dict(by_type), "verdicts": v,
             "random_n": len(rnd_done), "random_errors": len(rnd_wrong), "bound": wilson_upper(len(rnd_wrong), len(rnd_done)),
-            "targeted_n": sum(d["doc_id"] in done for d in q["targeted"]), "targeted_total": len(q["targeted"]), "queues": q}
+            "targeted_n": sum(d["doc_id"] in done for d in q["targeted"]), "targeted_total": len(q["targeted"]), "queues": q,
+            "groups": groups, "next": {k: next((d["doc_id"] for d in q[k] if d["doc_id"] not in done), None) for k in q}}
 
 
 def ledger(doc):
@@ -98,7 +115,7 @@ def index():
 def task_page(task):
     meta, docs = load(task)
     s = stats(task, docs)
-    return render_template("task.html", meta=meta, s=s)
+    return render_template("task.html", meta=meta, s=s, wilson=wilson_upper)
 
 
 @app.route("/t/<task>/d/<doc_id>")

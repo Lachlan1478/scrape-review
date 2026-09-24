@@ -2,26 +2,33 @@
 {% block crumbs %}<span class="crumb">{{ meta.title }}</span>{% endblock %}
 {% block body %}
 <div class="wrap">
-<h1>{{ meta.title }}</h1><p class="lede">{{ meta.description }}</p>
+<div class="title-row"><div><h1>{{ meta.title }}</h1><p class="lede">{{ meta.description }}</p></div>
+{% if s.next.random %}<a class="btn primary" href="{{ url_for('doc_page', task=meta.name, doc_id=s.next.random, q='random') }}">Continue reviewing</a>{% endif %}</div>
 
 <section class="confidence">
-<div class="bound">{% if s.bound is none %}<span class="bound-n">0<small> of {{ s.queues.random|length }}</small></span><span class="bound-l">random documents checked. The error bound appears after the first one.</span>
-{% else %}<span class="bound-n">≤ {{ '%.1f' % (100 * s.bound) }}%</span><span class="bound-l">of documents contain an error, at 95% confidence</span>
+{% set n, e, total = s.random_n, s.random_errors, s.queues.random|length %}
+<div class="bound">
+{% if n < 10 %}<span class="bound-n">{{ n }}<small> of {{ total }}</small></span><span class="bound-l">random documents checked, {{ e }} with an error.
+{% if s.bound is not none %}Error rate so far at most {{ '%.0f' % (100 * s.bound) }}%; {% endif %}{{ total }} clean would give under {{ '%.0f' % (100 * wilson(0, total)) }}%.</span>
+{% else %}<span class="bound-n">≤ {{ '%.1f' % (100 * s.bound) }}%</span><span class="bound-l">of documents contain an error, at 95% confidence: {{ e }} of {{ n }} checked.</span>{% endif %}
 <details class="how"><summary>How this is worked out</summary>
-<p>{{ s.random_errors }} of the {{ s.random_n }} random documents checked had at least one wrong field, so the observed rate is p = {{ '%.3f' % (s.random_errors / s.random_n) }}. The figure is the upper end of the 95% Wilson score interval, which stays honest for small samples and for zero errors:</p>
-<p class="formula">(p + z²/2n + z·√(p(1−p)/n + z²/4n²)) / (1 + z²/n), with z = 1.96 and n = {{ s.random_n }}</p>
-<p>It only uses the random sample, because flagged documents are picked for being risky and would bias the rate. It shrinks as n grows and as errors stay at zero.</p></details>{% endif %}</div>
+<p>The figure is the upper end of the 95% Wilson score interval for the share of documents with at least one wrong field, which stays honest for small samples and for zero errors:</p>
+<p class="formula">(p + z²/2n + z·√(p(1−p)/n + z²/4n²)) / (1 + z²/n), with p the observed rate, z = 1.96 and n the documents checked</p>
+<p>It only uses the random sample, because flagged documents are picked for being risky and would bias the rate.</p></details></div>
 <div class="tally-block"><div class="tally">{% for d in s.queues.random %}<a class="tk{{ ' ok' if d.doc_id in s.done and d.doc_id not in s.wrong_docs }}{{ ' bad' if d.doc_id in s.wrong_docs }}" href="{{ url_for('doc_page', task=meta.name, doc_id=d.doc_id, q='random') }}" title="{{ d.title }}"></a>{% endfor %}</div>
-<p class="muted">One mark per document in the random sample: {{ s.random_n }} of {{ s.queues.random|length }} checked, {{ s.random_errors }} with a wrong field. Zero errors in 30 gives under 10%, in 60 under 5%, in 300 under 1%.</p></div>
+<p class="muted">One mark per document in the random sample. Zero errors in 30 gives under 10%, in 60 under 5%, in 300 under 1%.</p></div>
 <div class="bytype">{% if s.by_type %}<table><tr><th>Field type</th><th class="num">Checked</th><th class="num">Wrong</th><th class="num">Accuracy</th></tr>
-{% for t, (n, w) in s.by_type.items() %}<tr><td>{{ t }}</td><td class="num">{{ n }}</td><td class="num">{{ w }}</td><td class="num">{{ '%.1f' % (100 * (n - w) / n) }}%</td></tr>{% endfor %}</table>
+{% for t, (cn, w) in s.by_type.items() %}<tr><td>{{ t }}</td><td class="num">{{ cn }}</td><td class="num">{{ w }}</td><td class="num">{% if cn >= 30 %}{{ '%.1f' % (100 * (cn - w) / cn) }}%{% else %}<span class="muted">after 30</span>{% endif %}</td></tr>{% endfor %}</table>
 <a class="dl" href="{{ url_for('corrections', task=meta.name) }}">Download verdicts and corrections</a>{% else %}<p class="muted">Per-field accuracy appears after the first review.</p>{% endif %}</div>
 </section>
 
 <div class="queues">
-<section><h2>Random sample</h2><p class="muted">A fixed draw of {{ s.queues.random|length }} from {{ '{:,}'.format(s.docs) }} documents. Work down the list in order.</p>
+<section><h2>Random sample</h2><p class="muted">A fixed draw of {{ total }} from {{ '{:,}'.format(s.docs) }} documents.</p>
 <ol class="docs">{% for d in s.queues.random %}<li class="{{ 'done' if d.doc_id in s.done }}{{ ' bad' if d.doc_id in s.wrong_docs }}"><a href="{{ url_for('doc_page', task=meta.name, doc_id=d.doc_id, q='random') }}">{{ d.title }}</a></li>{% endfor %}</ol></section>
-<section><h2>Flagged documents</h2><p class="muted">{{ '{:,}'.format(s.targeted_total) }} documents were hard to read or failed a consistency check; {{ s.targeted_n }} checked so far. Errors are most likely here.</p>
-<ul class="docs">{% for d in s.queues.targeted %}<li class="{{ 'done' if d.doc_id in s.done }}{{ ' bad' if d.doc_id in s.wrong_docs }}"><a href="{{ url_for('doc_page', task=meta.name, doc_id=d.doc_id, q='targeted') }}">{{ d.title }}</a><span class="why">{{ d.flags|join('. ') }}</span></li>{% endfor %}</ul></section>
+<section><h2>Flagged documents</h2><p class="muted">{{ '{:,}'.format(s.targeted_total) }} documents were hard to read or failed a check, {{ s.targeted_n }} checked. Grouped by what was flagged; errors are most likely here.</p>
+{% for kind, ds in s.groups.items() %}{% set kdone = ds|selectattr('doc_id', 'in', s.done)|list|length %}
+<details class="group" {% if loop.first %}open{% endif %}><summary><span class="tag">{{ kind }}</span><span class="muted">{{ ds|length }} documents, {{ kdone }} checked</span></summary>
+<ul class="docs">{% for d in ds %}<li class="{{ 'done' if d.doc_id in s.done }}{{ ' bad' if d.doc_id in s.wrong_docs }}"><a href="{{ url_for('doc_page', task=meta.name, doc_id=d.doc_id, q='targeted') }}">{{ d.title }}</a><span class="why">{{ d.flags|join('. ') }}</span></li>{% endfor %}</ul></details>
+{% endfor %}</section>
 </div>
 </div>{% endblock %}
