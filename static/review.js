@@ -41,12 +41,11 @@ function set(cell, verdict) {
   cell.classList.toggle('ok', verdict === 'ok'); cell.classList.toggle('wrong', verdict === 'wrong');
   cell.querySelector('.fix').hidden = verdict !== 'wrong';
 }
-const corrected = c => c.classList.contains('wrong') && c.querySelector('.fix').value.trim();
-function rowOk(r) {
-  const todo = cells(rows[r]).filter(c => !corrected(c));
-  todo.forEach(c => set(c, 'ok'));
-  post(todo.map(c => ({field_id: c.dataset.id, verdict: 'ok'})));
-  select(r + 1);
+function cellOk() {
+  const cell = cells(rows[R])[C];
+  cell.querySelector('.fix').value = ''; set(cell, 'ok');
+  post([{field_id: cell.dataset.id, verdict: 'ok'}]);
+  if (C + 1 < cells(rows[R]).length) select(R, C + 1); else select(nextRow(R), 0);
 }
 function cellWrong(cell) {
   const input = cell.querySelector('.fix');
@@ -67,7 +66,7 @@ rows.forEach((row, i) => {
       if (e.key === 'Enter' || e.key === 'Escape') { input.blur(); e.preventDefault(); }
     });
   });
-  row.querySelector('button.y').addEventListener('click', () => rowOk(i));
+  row.querySelector('button.y').addEventListener('click', () => { if (R !== i) select(i, 0); cellOk(); });
   row.querySelector('button.x').addEventListener('click', () => { if (R !== i) select(i, 0); cellWrong(cells(rows[R])[C]); });
 });
 document.getElementById('accept-all').addEventListener('click', async () => {
@@ -81,7 +80,7 @@ document.addEventListener('keydown', e => {
   const k = e.key;
   if (k === 'j') select(nextRow(R)); else if (k === 'k') select(prevRow(R));
   else if (k === 'l') select(R, C + 1); else if (k === 'h') select(R, C - 1);
-  else if (k === 'y' && R >= 0) rowOk(R);
+  else if (k === 'y' && R >= 0) cellOk();
   else if (k === 'x' && R >= 0) cellWrong(cells(rows[R])[C]);
   else if (k === 'a') document.getElementById('accept-all').click();
   else if (k === 'n') location.href = NEXT_URL;

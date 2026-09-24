@@ -23,11 +23,11 @@
 {% for row in rows %}{% set rowno = loop.index %}<tbody class="r{{ ' stacked' if stacked }}"><tr>
 <td class="rn">{% if row[0].row_label %}{{ row[0].row_label }}{% elif row|length > 1 %}{{ rowno }}{% else %}{{ row[0].label }}{% endif %}</td>
 {% for f in row if not stacked or f.type not in ('quote', 'note') %}{{ cell(f, verdicts.get(f.id), f.label if stacked and not loop.first else none) }}{% endfor %}
-<td class="act"><button class="y" title="Whole row is right (y)">✓</button><button class="x" title="Selected cell is wrong; press again to undo (x)">✗</button></td></tr>
+<td class="act"><button class="y" title="Selected cell is right; moves to the next cell (y)">✓</button><button class="x" title="Selected cell is wrong; press again to undo (x)">✗</button></td></tr>
 {% if stacked %}{% for f in row if f.type in ('quote', 'note') and f.value %}<tr class="sub"><td class="rn">{{ f.label }}</td>{{ cell(f, verdicts.get(f.id)) }}<td></td></tr>{% endfor %}{% endif %}
 </tbody>{% endfor %}</table>
 {% endfor %}
-<p class="keys">Click a cell to see it on the page. <kbd>j</kbd><kbd>k</kbd> rows, <kbd>h</kbd><kbd>l</kbd> cells, <kbd>y</kbd> row is right, <kbd>x</kbd> cell is wrong (again to undo), <kbd>a</kbd> accept the rest, <kbd>n</kbd> next document. Dotted values were not found in the page text, so check them against the image.</p>
+<p class="keys">Click a cell to see it on the page; the tick and cross act on the highlighted cell. <kbd>j</kbd><kbd>k</kbd> rows, <kbd>h</kbd><kbd>l</kbd> cells, <kbd>y</kbd> cell is right and move on, <kbd>x</kbd> cell is wrong (again to undo), <kbd>a</kbd> accept the rest, <kbd>n</kbd> next document. Dotted values were not found in the page text, so check them against the image.</p>
 </div>
 </div>{% endblock %}
 {% block scripts %}<script>const VERDICT_URL = "{{ url_for('verdict', task=meta.name, doc_id=doc.doc_id) }}"; const NEXT_URL = {{ (url_for('doc_page', task=meta.name, doc_id=nxt, q=q) if nxt else url_for('task_page', task=meta.name))|tojson }};</script>

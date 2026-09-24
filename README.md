@@ -11,7 +11,7 @@ uv run python app.py          # http://127.0.0.1:5001
 
 - **Random queue**: a seeded sample of 60 documents, stable across runs. Zero errors in n reviews bounds the document error rate at about 3/n with 95% confidence: 30 gives under 10%, 60 under 5%, 300 under 1%. The page shows the live Wilson bound.
 - **Targeted queue**: every document carrying a risk flag from the exporter (thin text layer, values not found on the page, tables that overflow, arithmetic that does not reconcile). If the worst cases hold, the rest almost certainly do.
-- **Field-level verdicts** with optional corrections, reviewed one row (holder) at a time: j/k move between rows, h/l between cells, y marks the row right, x marks the selected cell wrong and opens a correction, a accepts everything left, n opens the next unchecked document. The selected cell is highlighted on the page with the extracted value pinned beside it. Per-field-type accuracy is reported and verdicts export as CSV for feeding back into the task.
+- **Field-level verdicts** with optional corrections, reviewed one cell at a time: j/k move between rows, h/l between cells, y marks the highlighted cell right and moves to the next, x marks it wrong and opens a correction, a accepts everything left, n opens the next unchecked document. The selected cell is highlighted on the page with the extracted value pinned beside it. Per-field-type accuracy is reported and verdicts export as CSV for feeding back into the task.
 - **Source in view**: the extracted value's bounding box is drawn on the page image, and clicking a field scrolls to it. Values the exporter could not locate are shown in grey so the reviewer checks them against the image. The original filing is one click away.
 
 ## Adding a task
