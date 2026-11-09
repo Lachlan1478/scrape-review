@@ -1,0 +1,5 @@
+{
+ "name": "rx",
+ "title": "ASX shares pledged, lent and hedged",
+ "description": "Margin loans, pledges, collars, derivatives and securities lending read by Haiku 5.5 from directors' and substantial holders' notices (spec 046)."
+}
