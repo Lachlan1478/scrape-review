@@ -1,5 +1,5 @@
 {
  "name": "asx-lending-and-collateral",
- "title": "ASX shares pledged, lent and hedged",
- "description": "Margin loans, pledges, collars, derivatives and securities lending read by Haiku 5.5 from directors' and substantial holders' notices (spec 046)."
+ "title": "ASX securities lending and collateral",
+ "description": "Pledges, collars, derivatives, securities lending and collateral read by Haiku 5.5 from directors' and substantial holders' notices (spec 046)."
 }

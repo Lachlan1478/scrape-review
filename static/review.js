@@ -27,12 +27,19 @@ function note(c) {
 function select(r, c = 0) {
   document.querySelectorAll('.sel').forEach(e => e.classList.remove('sel'));
   document.querySelectorAll('.hl.row, .hl.on, .pin').forEach(e => e.remove());
+  document.querySelectorAll('.unlocated-note').forEach(e => e.remove());
   R = Math.max(0, Math.min(rows.length - 1, r)); const row = rows[R], cs = cells(row);
   if (!cs.length) return;
   C = Math.max(0, Math.min(cs.length - 1, c)); const cell = cs[C];
   row.classList.add('sel'); cell.classList.add('sel'); cell.scrollIntoView({block: 'nearest'});
   cs.filter(x => x.dataset.bbox && x !== cell).forEach(x => box(x, 'hl row'));
   if (cell.dataset.bbox) { box(cell, 'hl on').scrollIntoView({block: 'center'}); note(cell); }
+  else {
+    // A value the exporter could not find in the page text: say so, rather than leave the last highlight.
+    const n = document.createElement('div'); n.className = 'unlocated-note';
+    n.textContent = `"${cell.dataset.value}" is not in the page text. Check it against the pages by eye.`;
+    document.getElementById('pages').prepend(n);
+  }
 }
 function post(items) {
   return fetch(VERDICT_URL, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(items)});

@@ -151,3 +151,5 @@ body.dragging{cursor:col-resize;user-select:none}
 
 @media (max-width:1000px){.confidence{grid-template-columns:1fr;gap:24px}.queues{grid-template-columns:1fr}.task-row{grid-template-columns:1fr}.bound-mini{text-align:left}
 .split{grid-template-columns:1fr;grid-template-rows:60vh 6px 1fr}.divider{cursor:default}#ledger{border-left:0;border-top:1px solid var(--rule)}.bar{flex-direction:column}body.review{height:auto;overflow:auto}}
+
+.unlocated-note { position: sticky; top: 0; z-index: 5; margin: 0 0 8px; padding: 6px 10px; border: 1px solid #f0c47a; background: #fff4e5; border-radius: 6px; font-size: 12px; color: #6b4a12; }
